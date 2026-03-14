@@ -1,0 +1,18 @@
+# Generated model files (1.3GB, regenerate with setup.sh)
+siglip_onnx/
+
+# ONNX Runtime shared library (downloaded by setup.sh)
+libonnxruntime.*
+onnxruntime-*/
+
+# Python virtual environment
+venv/
+
+# Go binary
+clip-onnx-go
+
+# macOS
+.DS_Store
+
+# Test images (optional, user-provided)
+images/
