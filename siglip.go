@@ -1,10 +1,3 @@
-// Package siglip provides zero-shot image classification using Google's
-// SigLIP model (siglip-base-patch16-256-multilingual) via ONNX Runtime.
-//
-// Everything is auto-downloaded on first use — just go get and call New():
-//
-//	c, err := siglip.New()
-//	results, err := c.Classify("photo.jpg", []string{"a dog", "a cat"})
 package siglip
 
 import (
