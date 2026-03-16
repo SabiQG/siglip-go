@@ -120,11 +120,11 @@ func TestSearch_TopK(t *testing.T) {
 		}
 	}
 
-	matches, err := c.Search(embs, "a dog", 2)
+	matches, err := c.Search(embs, "a dog", 3)
 	if err != nil {
 		t.Fatalf("Search: %v", err)
 	}
-	if len(matches) != 2 {
+	if len(matches) != 3 {
 		t.Errorf("Search returned %d results, want 2", len(matches))
 	}
 	for _, m := range matches {
