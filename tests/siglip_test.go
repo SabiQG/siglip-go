@@ -209,8 +209,8 @@ func BenchmarkClassify(b *testing.B) {
 	defer c.Close()
 
 	labels := []string{"a dog", "a cat", "an airplane"}
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	
+	for b.Loop() {
 		c.Classify(dogImage, labels)
 	}
 }
@@ -222,8 +222,8 @@ func BenchmarkImageEmbedding(b *testing.B) {
 	}
 	defer c.Close()
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	
+	for b.Loop() {
 		c.ImageEmbedding(dogImage)
 	}
 }
