@@ -193,11 +193,11 @@ func (c *Classifier) Classify(imagePath string, labels []string) ([]Result, erro
 		if err != nil {
 			return nil, fmt.Errorf("siglip: text embedding for %q: %w", label, err)
 		}
-		cos := cosineSimilarity(imgEmbed, textEmbed)
+		cos := CosineSimilarity(imgEmbed, textEmbed)
 		logit := cos*logitScale + logitBias
 		results[i] = Result{
 			Label:  label,
-			Score:  sigmoid(logit),
+			Score:  Sigmoid(logit),
 			Cosine: cos,
 		}
 	}
@@ -220,11 +220,11 @@ func (c *Classifier) Search(embeddings [][]float32, label string, k int) ([]Sear
 	matches := make([]SearchResult, len(embeddings))
 
 	for i, emb := range embeddings {
-		cos := cosineSimilarity(emb, textEmbed)
+		cos := CosineSimilarity(emb, textEmbed)
 		logit := cos*logitScale + logitBias
 		matches[i] = SearchResult{
 			Index:  i,
-			Score:  sigmoid(logit),
+			Score:  Sigmoid(logit),
 			Cosine: cos,
 		}
 	}

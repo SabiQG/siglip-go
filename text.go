@@ -34,6 +34,6 @@ func (c *Classifier) textEmbedding(text string) ([]float32, error) {
 	if err := sess.Run(); err != nil {
 		return nil, err
 	}
-	normalize(out)
+	Normalize(out)
 	return out, nil
 }

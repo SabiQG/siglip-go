@@ -84,6 +84,6 @@ func (c *Classifier) imageEmbedding(imagePath string) ([]float32, error) {
 	if err := sess.Run(); err != nil {
 		return nil, err
 	}
-	normalize(out)
+	Normalize(out)
 	return out, nil
 }

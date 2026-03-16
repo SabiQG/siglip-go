@@ -14,5 +14,3 @@ clip-onnx-go
 # macOS
 .DS_Store
 
-# Test images (optional, user-provided)
-images/
