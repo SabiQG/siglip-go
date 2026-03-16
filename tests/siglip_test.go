@@ -3,7 +3,7 @@ package tests
 import (
 	"testing"
 
-	siglip "github.com/sabi/siglip-go"
+	siglip "github.com/SabiQG/siglip-go"
 )
 
 const (
@@ -209,7 +209,7 @@ func BenchmarkClassify(b *testing.B) {
 	defer c.Close()
 
 	labels := []string{"a dog", "a cat", "an airplane"}
-	
+
 	for b.Loop() {
 		c.Classify(dogImage, labels)
 	}
@@ -222,7 +222,6 @@ func BenchmarkImageEmbedding(b *testing.B) {
 	}
 	defer c.Close()
 
-	
 	for b.Loop() {
 		c.ImageEmbedding(dogImage)
 	}

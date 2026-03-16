@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	siglip "github.com/sabi/siglip-go"
+	siglip "github.com/SabiQG/siglip-go"
 )
 
 func main() {

@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	siglip "github.com/sabi/siglip-go"
+	siglip "github.com/SabiQG/siglip-go"
 )
 
 const embDim = 768

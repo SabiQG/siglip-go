@@ -1,4 +1,4 @@
-module github.com/sabi/siglip-go
+module github.com/SabiQG/siglip-go
 
 go 1.25.7
 
