@@ -47,6 +47,13 @@ type Result struct {
 	Cosine float64 // raw cosine similarity
 }
 
+// SearchResult holds the result of matching a precomputed embedding against a label.
+type SearchResult struct {
+	Index  int     // original index in the embeddings slice
+	Score  float64 // sigmoid probability [0, 1]
+	Cosine float64 // raw cosine similarity
+}
+
 // Classifier performs zero-shot image classification with SigLIP.
 type Classifier struct {
 	tok      *tokenizer
@@ -197,6 +204,37 @@ func (c *Classifier) Classify(imagePath string, labels []string) ([]Result, erro
 
 	sort.Slice(results, func(i, j int) bool { return results[i].Score > results[j].Score })
 	return results, nil
+}
+
+// Search scores a list of precomputed image embeddings against a single text
+// label and returns the top-k matches sorted by score descending.
+// Each embedding must be a normalized 768-dimensional vector (as returned by
+// ImageEmbedding). If k is larger than len(embeddings), all results are returned.
+func (c *Classifier) Search(embeddings [][]float32, label string, k int) ([]SearchResult, error) {
+	textEmbed, err := c.textEmbedding(label)
+	if err != nil {
+		return nil, fmt.Errorf("siglip: text embedding for %q: %w", label, err)
+	}
+
+	logitScale := math.Exp(logitScaleInit)
+	matches := make([]SearchResult, len(embeddings))
+
+	for i, emb := range embeddings {
+		cos := cosineSimilarity(emb, textEmbed)
+		logit := cos*logitScale + logitBias
+		matches[i] = SearchResult{
+			Index:  i,
+			Score:  sigmoid(logit),
+			Cosine: cos,
+		}
+	}
+
+	sort.Slice(matches, func(i, j int) bool { return matches[i].Score > matches[j].Score })
+
+	if k > len(matches) {
+		k = len(matches)
+	}
+	return matches[:k], nil
 }
 
 func defaultCacheDir() string {
