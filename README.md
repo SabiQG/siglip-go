@@ -133,7 +133,7 @@ type SearchResult struct {
 
 ### `(*Classifier).Close()`
 
-Releases classifier resources. Does not destroy the global ONNX Runtime environment.
+Releases classifier resources. If this classifier owns the last ORT reference, it also tears down the shared ONNX Runtime environment. Classifiers created with `WithSkipORTInit()` never touch the ORT lifecycle.
 
 ---
 

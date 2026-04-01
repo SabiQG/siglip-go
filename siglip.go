@@ -30,8 +30,10 @@ var requiredFiles = []string{
 	"vocab.json",
 }
 
-var ortOnce sync.Once
-var ortInitErr error
+var (
+	ortMu       sync.Mutex
+	ortRefCount int
+)
 
 // Result holds the classification score for a single label.
 type Result struct {
@@ -49,8 +51,9 @@ type SearchResult struct {
 
 // Classifier performs zero-shot image classification with SigLIP.
 type Classifier struct {
-	tok      *tokenizer
-	modelDir string
+	tok        *tokenizer
+	modelDir   string
+	managesORT bool
 }
 
 type config struct {
@@ -124,46 +127,80 @@ func New(opts ...Option) (*Classifier, error) {
 		}
 	}
 
+	ownORT := false
 	if !cfg.skipORTInit {
-		ortOnce.Do(func() {
-			lib := cfg.runtimeLib
-			if lib == "" {
-				// Try to find or download ORT
-				if !cfg.noDownload {
-					var err error
-					lib, err = ensureORT(cfg.modelDir)
-					if err != nil {
-						ortInitErr = err
-						return
-					}
-				} else {
-					lib = findRuntimeLib()
-				}
-			}
-			if lib == "" {
-				ortInitErr = fmt.Errorf("siglip: ONNX Runtime library not found; " +
-					"install it or use WithRuntimeLib()")
-				return
-			}
-			ort.SetSharedLibraryPath(lib)
-			ortInitErr = ort.InitializeEnvironment()
-		})
-		if ortInitErr != nil {
-			return nil, ortInitErr
+		if err := acquireORT(cfg); err != nil {
+			return nil, err
 		}
+		ownORT = true
 	}
 
 	tok, err := loadSigLIPTokenizer(filepath.Join(cfg.modelDir, "vocab.json"))
 	if err != nil {
+		if ownORT {
+			releaseORT()
+		}
 		return nil, fmt.Errorf("siglip: loading tokenizer: %w", err)
 	}
 
-	return &Classifier{tok: tok, modelDir: cfg.modelDir}, nil
+	return &Classifier{tok: tok, modelDir: cfg.modelDir, managesORT: ownORT}, nil
 }
 
 // Close releases resources held by the Classifier.
-// It does not destroy the global ONNX Runtime environment.
-func (c *Classifier) Close() {}
+// If this classifier owns the last ORT reference, it also tears down the
+// shared ONNX Runtime environment. Classifiers created with
+// [WithSkipORTInit] never touch the ORT lifecycle.
+func (c *Classifier) Close() {
+	if c.managesORT {
+		releaseORT()
+		c.managesORT = false
+	}
+}
+
+// acquireORT initializes the ONNX Runtime environment (on first call) and
+// increments the reference count.
+func acquireORT(cfg *config) error {
+	ortMu.Lock()
+	defer ortMu.Unlock()
+
+	if ortRefCount == 0 {
+		lib := cfg.runtimeLib
+		if lib == "" {
+			if !cfg.noDownload {
+				var err error
+				lib, err = ensureORT(cfg.modelDir)
+				if err != nil {
+					return err
+				}
+			} else {
+				lib = findRuntimeLib()
+			}
+		}
+		if lib == "" {
+			return fmt.Errorf("siglip: ONNX Runtime library not found; " +
+				"install it or use WithRuntimeLib()")
+		}
+		ort.SetSharedLibraryPath(lib)
+		if err := ort.InitializeEnvironment(); err != nil {
+			return err
+		}
+	}
+	ortRefCount++
+	return nil
+}
+
+// releaseORT decrements the ORT reference count and destroys the environment
+// when no more classifiers need it.
+func releaseORT() {
+	ortMu.Lock()
+	defer ortMu.Unlock()
+
+	ortRefCount--
+	if ortRefCount <= 0 {
+		ort.DestroyEnvironment()
+		ortRefCount = 0
+	}
+}
 
 // ImageEmbedding returns the normalized 768-dimensional embedding for an image.
 func (c *Classifier) ImageEmbedding(imagePath string) ([]float32, error) {

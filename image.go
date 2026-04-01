@@ -73,9 +73,21 @@ func (c *Classifier) imageEmbedding(imagePath string) ([]float32, error) {
 	defer outT.Destroy()
 
 	modelPath := filepath.Join(c.modelDir, "vision_model.onnx")
+	opts, err := ort.NewSessionOptions()
+	if err != nil {
+		return nil, fmt.Errorf("siglip: creating session options: %w", err)
+	}
+	defer opts.Destroy()
+	if err := opts.SetCpuMemArena(false); err != nil {
+		return nil, fmt.Errorf("siglip: disabling CPU mem arena: %w", err)
+	}
+	if err := opts.SetMemPattern(false); err != nil {
+		return nil, fmt.Errorf("siglip: disabling mem pattern: %w", err)
+	}
+
 	sess, err := ort.NewAdvancedSession(modelPath,
 		[]string{"pixel_values"}, []string{"image_embeds"},
-		[]ort.Value{inT}, []ort.Value{outT}, nil)
+		[]ort.Value{inT}, []ort.Value{outT}, opts)
 	if err != nil {
 		return nil, err
 	}
